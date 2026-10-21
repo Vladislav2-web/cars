@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>@yield('title', 'Админ-панель') — Автосалон</title>
-    <link rel="stylesheet" href="{{ asset('css/site.css') }}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body style="background: #141a26; color: #e2e8f0; font-family: sans-serif; margin: 0;">
     <nav style="padding: 15px; background: #1d2535; border-bottom: 1px solid #2b3546;">

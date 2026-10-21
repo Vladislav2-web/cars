@@ -1,34 +1,17 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ $car['title'] }} - Автосалон</title>
-</head>
-<body>
-    <nav>
-        <a href="{{ route('home') }}">Главная</a> |
-        <a href="{{ route('cars.index') }}">К каталогу</a>
-    </nav>
-
-    <h1>Автомобиль: {{ $car['title'] }}</h1>
-    <p><strong>ID в базе:</strong> {{ $id }}</p>
-    <p><strong>Год выпуска:</strong> {{ $car['year'] }}</p>
-    <p><strong>Цена:</strong> {{ $car['price'] }}</p>
-
-    <br>
-    <a href="{{ route('cars.index') }}">← Назад к списку автомобилей</a>
-</body>
-</html>
 @extends('layouts.app')
 
-@section('title', $car['title'])
+@section('title', $car->title . ' - Автосалон')
 
 @section('content')
-    <h1>Автомобиль: {{ $car['title'] }}</h1>
-    <p><strong>ID в базе:</strong> {{ $id }}</p>
-    <p><strong>Год выпуска:</strong> {{ $car['year'] }}</p>
-    <p><strong>Цена:</strong> {{ $car['price'] }}</p>
-
-    <br>
-    <a href="{{ route('cars.index') }}" class="badge">← Назад к списку автомобилей</a>
+    <div class="card" style="padding: 20px;">
+        <h1>{{ $car->title }}</h1>
+        <p><strong>Марка:</strong> {{ $car->brand_name }}</p>
+        <p><strong>Год выпуска:</strong> {{ $car->year }} г.</p>
+        <p><strong>Цена:</strong> {{ $car->price }} тнг.</p>
+        <p><strong>Описание:</strong> {{ $car->description }}</p>
+        
+        <p style="margin-top: 20px;">
+            <a href="{{ route('cars.index') }}" class="badge">← Назад к каталогу</a>
+        </p>
+    </div>
 @endsection

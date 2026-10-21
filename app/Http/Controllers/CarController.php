@@ -3,21 +3,29 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CarController extends Controller
 {
-    // Список автомобилей
     public function index()
     {
-        return view('cars.index', ['items' => config('catalog.items')]);
+        $items = DB::table('cars')
+            ->join('brands', 'cars.brand_id', '=', 'brands.id')
+            ->select('cars.*', 'brands.name as brand_name')
+            ->orderBy('cars.title')
+            ->get();
+
+        return view('cars.index', compact('items'));
     }
 
-    // Карточка отдельного автомобиля
     public function show(int $id)
     {
-        $car = config("catalog.items.$id");
+        $car = DB::table('cars')
+            ->join('brands', 'cars.brand_id', '=', 'brands.id')
+            ->select('cars.*', 'brands.name as brand_name')
+            ->where('cars.id', $id)
+            ->first();
         
-        // Короткая проверка с помощью abort_if
         abort_if(! $car, 404);
 
         return view('cars.show', compact('id', 'car'));

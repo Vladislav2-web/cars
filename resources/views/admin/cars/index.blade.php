@@ -9,16 +9,18 @@
         <tr>
             <th>ID</th>
             <th>Название</th>
+            <th>Марка</th>
             <th>Год</th>
             <th>Цена</th>
             <th>Статус</th>
         </tr>
-        @foreach ($items as $id => $item)
+        @foreach ($items as $item)
         <tr>
-            <td>{{ $id }}</td>
-            <td>{{ $item['title'] }}</td>
-            <td>{{ $item['year'] }}</td>
-            <td>{{ $item['price'] }}</td>
+            <td>{{ $item->id }}</td>
+            <td>{{ $item->title }}</td>
+            <td>{{ $item->brand_name }}</td>
+            <td>{{ $item->year }}</td>
+            <td>{{ $item->price }}</td>
             <td>
                 @if ($loop->first)
                     <span style="color: #4cc488; font-weight: bold;">новая</span>
