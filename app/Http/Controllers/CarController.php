@@ -2,32 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Car;
+use App\Models\Brand;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CarController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $items = DB::table('cars')
-            ->join('brands', 'cars.brand_id', '=', 'brands.id')
-            ->select('cars.*', 'brands.name as brand_name')
-            ->orderBy('cars.title')
-            ->get();
+        // Белый список для безопасной сортировки
+        $sort = in_array($request->sort, ['title', 'year', 'price']) ? $request->sort : 'title';
 
-        return view('cars.index', compact('items'));
+        // Запрос с пагинацией (9 элементов на страницу) и сохранением GET-параметров
+        $items = Car::with('brand')
+            ->search($request->q)
+            ->when($request->brand_id, fn ($q, $b) => $q->where('brand_id', $b))
+            ->orderBy($sort)
+            ->paginate(9)
+            ->withQueryString();
+
+        // Получаем все марки с количеством автомобилей для выпадающего списка
+        $brands = Brand::withCount('cars')->orderBy('name')->get();
+
+        return view('cars.index', compact('items', 'brands'));
     }
 
-    public function show(int $id)
+    public function show(Car $car)
     {
-        $car = DB::table('cars')
-            ->join('brands', 'cars.brand_id', '=', 'brands.id')
-            ->select('cars.*', 'brands.name as brand_name')
-            ->where('cars.id', $id)
-            ->first();
-        
-        abort_if(! $car, 404);
+        // Получаем 3 другие машины этой же марки для блока рекомендаций
+        $relatedCars = Car::where('brand_id', $car->brand_id)
+            ->where('id', '!=', $car->id)
+            ->take(3)
+            ->get();
 
-        return view('cars.show', compact('id', 'car'));
+        return view('cars.show', compact('car', 'relatedCars'));
     }
 }

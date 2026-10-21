@@ -15,4 +15,7 @@
 
     @include('partials.footer')
 </body>
+<footer style="margin-top: 40px; text-align: center; color: #666;">
+    <p>Запросов к БД: {{ count(DB::getQueryLog()) }}</p>
+</footer>
 </html>

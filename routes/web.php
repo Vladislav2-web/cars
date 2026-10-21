@@ -1,39 +1,26 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CarController;
-use App\Http\Controllers\PageController;
-use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
+use Illuminate\Support\Facades\Route;
 
-// --- Маршруты страниц ---
-Route::get('/', [PageController::class, 'home'])->name('home');
-Route::get('/about', [PageController::class, 'about'])->name('about');
-Route::get('/contacts', [PageController::class, 'contacts'])->name('contacts');
-Route::get('/rules', [PageController::class, 'rules'])->name('rules');
+// Главная страница
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
 
-Route::get('/hello/{name}', function (string $name) {
-    return 'Здравствуйте, ' . $name . '! Добро пожаловать в Автосалон.';
-});
-
-// --- Каталог автомобилей ---
+// Публичный каталог автомобилей и карточка автомобиля (Eloquent модель-биндгинг)
 Route::get('/cars', [CarController::class, 'index'])->name('cars.index');
-Route::get('/cars/{id}', [CarController::class, 'show'])->whereNumber('id')->name('cars.show');
+Route::get('/cars/{car}', [CarController::class, 'show'])->name('cars.show');
 
-Route::redirect('/main', '/');
+// Публичная страница конкретной марки (производителя)
+Route::get('/brands/{brand}', [BrandController::class, 'show'])->name('brands.show');
 
-// --- Админ-раздел с middleware и контроллерами ---
-Route::prefix('admin')->name('admin.')->middleware('admin.key')->group(function () {
-    Route::get('/', DashboardController::class)->name('dashboard');   
-    Route::get('/cars', [AdminCarController::class, 'index'])->name('index');
+// Админ-панель (с защитой секретным ключом, как делали ранее)
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminCarController::class, 'index'])->name('index');
+    Route::get('/cars', [AdminCarController::class, 'index'])->name('cars.index');
     Route::get('/cars/create', [AdminCarController::class, 'create'])->name('create');
+    Route::get('/cars/{car}', [AdminCarController::class, 'show'])->name('show');
 });
-
-// Маршрут выхода из админки
-Route::get('/admin/logout', function () {
-    session()->forget('is_admin');
-    return redirect()->route('home');
-})->name('admin.logout');
-
-// --- Запись на тест-драйв с ограничением по времени ---
-Route::view('/booking', 'booking')->middleware('hours:9,18')->name('booking');
