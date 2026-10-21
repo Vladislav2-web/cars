@@ -1,51 +1,32 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CarController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\CarController as AdminCarController;
 
-// --- Маршруты ЛР1 ---
-Route::get('/', function () {
-    return view('home');
-})->name('home');
-
-Route::get('/about', function () {
-    return view('about', [
-        'name' => 'Иван Иванов',
-        'group' => 'П-31'
-    ]);
-})->name('about');
-
-Route::get('/contacts', function () {
-    return view('contacts');
-})->name('contacts');
+// --- Маршруты страниц ---
+Route::get('/', [PageController::class, 'home'])->name('home');
+Route::get('/about', [PageController::class, 'about'])->name('about');
+Route::get('/contacts', [PageController::class, 'contacts'])->name('contacts');
+Route::get('/rules', [PageController::class, 'rules'])->name('rules');
 
 Route::get('/hello/{name}', function (string $name) {
     return 'Здравствуйте, ' . $name . '! Добро пожаловать в Автосалон.';
 });
 
-// --- Маршруты ЛР2 (Каталог автомобилей, правила, редирект) ---
-Route::get('/cars', function () {
-    return view('cars.index', ['items' => config('catalog.items')]);
-})->name('cars.index');
-
-Route::get('/cars/{id}', function (int $id) {
-    $car = config("catalog.items.$id");
-    if (! $car) {
-        abort(404);
-    }
-    return view('cars.show', ['id' => $id, 'car' => $car]);
-})->whereNumber('id')->name('cars.show');
-
-Route::view('/rules', 'rules');
+// --- Каталог автомобилей ---
+Route::get('/cars', [CarController::class, 'index'])->name('cars.index');
+Route::get('/cars/{id}', [CarController::class, 'show'])->whereNumber('id')->name('cars.show');
 
 Route::redirect('/main', '/');
 
-// --- Маршруты ЛР2 (Админ-раздел с middleware) ---
+// --- Админ-раздел с middleware и контроллерами ---
 Route::prefix('admin')->name('admin.')->middleware('admin.key')->group(function () {
-    Route::view('/', 'admin.dashboard')->name('dashboard');   
-    Route::get('/cars', function () {
-        return view('admin.cars.index', ['items' => config('catalog.items')]);
-    })->name('index');
-    Route::view('/cars/create', 'admin.cars.create')->name('create');
+    Route::get('/', DashboardController::class)->name('dashboard');   
+    Route::get('/cars', [AdminCarController::class, 'index'])->name('index');
+    Route::get('/cars/create', [AdminCarController::class, 'create'])->name('create');
 });
 
 // Маршрут выхода из админки
@@ -54,5 +35,5 @@ Route::get('/admin/logout', function () {
     return redirect()->route('home');
 })->name('admin.logout');
 
-// --- Маршруты ЛР2 (Запись на тест-драйв с ограничением по времени работы) ---
+// --- Запись на тест-драйв с ограничением по времени ---
 Route::view('/booking', 'booking')->middleware('hours:9,18')->name('booking');

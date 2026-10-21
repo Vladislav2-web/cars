@@ -1,26 +1,21 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Каталог автомобилей - {{ config('app.name') }}</title>
-</head>
-<body>
-    <nav>
-        <a href="{{ route('home') }}">Главная</a> |
-        <a href="{{ route('cars.index') }}">Каталог авто</a> |
-        <a href="{{ route('about') }}">О проекте</a> |
-        <a href="{{ route('contacts') }}">Контакты</a> |
-        <a href="/rules">Правила</a>
-    </nav>
+@extends('layouts.app')
 
+@section('title', 'Каталог автомобилей')
+
+@section('content')
     <h1>Каталог автомобилей</h1>
-    <ul>
-        @foreach ($items as $id => $item)
-            <li>
-                <a href="{{ route('cars.show', $id) }}">{{ $item['title'] }}</a> 
-                ({{ $item['year'] }} г.) — {{ $item['price'] }}
-            </li>
-        @endforeach
-    </ul>
-</body>
-</html>
+    
+    @forelse ($items as $id => $item)
+        <div class="card">
+            <span>{{ $loop->iteration }}.</span>
+            <a href="{{ route('cars.show', $id) }}">{{ $item['title'] }}</a> 
+            ({{ $item['year'] }} г.) — {{ $item['price'] }}
+            
+            @if ($item['year'] > 2021)
+                <span class="badge">Новинка</span>
+            @endif
+        </div>
+    @empty
+        <p>Каталог автомобилей пока пуст.</p>
+    @endforelse
+@endsection

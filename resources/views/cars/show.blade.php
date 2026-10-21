@@ -19,3 +19,16 @@
     <a href="{{ route('cars.index') }}">← Назад к списку автомобилей</a>
 </body>
 </html>
+@extends('layouts.app')
+
+@section('title', $car['title'])
+
+@section('content')
+    <h1>Автомобиль: {{ $car['title'] }}</h1>
+    <p><strong>ID в базе:</strong> {{ $id }}</p>
+    <p><strong>Год выпуска:</strong> {{ $car['year'] }}</p>
+    <p><strong>Цена:</strong> {{ $car['price'] }}</p>
+
+    <br>
+    <a href="{{ route('cars.index') }}" class="badge">← Назад к списку автомобилей</a>
+@endsection
