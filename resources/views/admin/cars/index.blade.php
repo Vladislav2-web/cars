@@ -20,8 +20,8 @@
                 <th style="padding: 10px;">ID</th>
                 <th style="padding: 10px;">Название</th>
                 <th style="padding: 10px;">Марка</th>
-                <th style="padding: 10px;">Год</th>
                 <th style="padding: 10px;">Цена</th>
+                <th style="padding: 10px;">Автор записи</th>
                 <th style="padding: 10px;">Действия</th>
             </tr>
         </thead>
@@ -30,16 +30,24 @@
                 <tr style="border-bottom: 1px solid #2b3546;">
                     <td style="padding: 10px;">{{ $car->id }}</td>
                     <td style="padding: 10px;">{{ $car->title }}</td>
-                    <td style="padding: 10px;">{{ $car->brand->name ?? 'Без марки' }}</td>
-                    <td style="padding: 10px;">{{ $car->year }}</td>
-                    <td style="padding: 10px;">{{ $car->price }} тнг.</td>
+                    <td style="padding: 10px;">{{ $car->brand->name ?? '—' }}</td>
+                    <td style="padding: 10px;">{{ $car->price }} ₸</td>
+                    <!-- Вывод автора записи -->
+                    <td style="padding: 10px;">{{ $car->user?->name ?? '—' }}</td>
                     <td style="padding: 10px; display: flex; gap: 8px;">
-                        <a href="{{ route('admin.cars.edit', $car) }}" style="color: #63b3ed; text-decoration: none;">Изменить</a>
-                        <form action="{{ route('admin.cars.destroy', $car) }}" method="POST" onsubmit="return confirm('Удалить запись?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" style="background: none; border: none; color: #f07070; cursor: pointer; padding: 0;">Удалить</button>
-                        </form>
+                        <!-- Кнопка изменить показывается только если разрешено политикой -->
+                        @can('update', $car)
+                            <a href="{{ route('admin.cars.edit', $car) }}" style="color: #63b3ed; text-decoration: none;">Изменить</a>
+                        @endcan
+
+                        <!-- Кнопка удалить показывается только если разрешено политикой -->
+                        @can('delete', $car)
+                            <form action="{{ route('admin.cars.destroy', $car) }}" method="POST" onsubmit="return confirm('Удалить автомобиль?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" style="background: none; border: none; color: #f07070; cursor: pointer; padding: 0;">Удалить</button>
+                            </form>
+                        @endcan
                     </td>
                 </tr>
             @endforeach

@@ -43,7 +43,6 @@ class BrandController extends Controller
 
     public function destroy(Brand $brand)
     {
-        // Проверка: если у марки есть автомобили, удалять запрещено
         if ($brand->cars()->exists()) {
             return back()->with('error', 'Нельзя удалить марку: к ней привязаны автомобили!');
         }

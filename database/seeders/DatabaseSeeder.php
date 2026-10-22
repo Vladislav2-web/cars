@@ -2,16 +2,32 @@
 
 namespace Database\Seeders;
 
-use App\Models\Brand;
-use App\Models\Car;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call(BrandSeeder::class); // Твои реальные марки из ЛР №4
+        User::factory()->create([
+            'name' => 'Администратор',
+            'email' => 'admin@test.kz',
+            'password' => 'password',
+            'role' => 'admin',
+        ]);
 
-        Car::factory(40)->recycle(Brand::all())->create(); // 40 сгенерированных авто
+        User::factory()->create([
+            'name' => 'Редактор',
+            'email' => 'editor@test.kz',
+            'password' => 'password',
+            'role' => 'editor',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Обычный пользователь',
+            'email' => 'user@test.kz',
+            'password' => 'password',
+            'role' => 'user',
+        ]);
     }
 }
