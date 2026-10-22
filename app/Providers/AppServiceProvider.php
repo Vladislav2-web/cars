@@ -15,9 +15,14 @@ class AppServiceProvider extends ServiceProvider
      * Register any application services.
      */
     public function register(): void
-    {
-        //
-    }
+{
+    $this->app->singleton(\App\Contracts\SmsSender::class, function () {
+        return match (config('services.sms.driver')) {
+            'log'   => new \App\Services\Sms\LogSmsSender(),
+            default => new \App\Services\Sms\NullSmsSender(),
+        };
+    });
+}
 
     /**
      * Bootstrap any application services.

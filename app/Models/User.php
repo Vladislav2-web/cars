@@ -24,6 +24,10 @@ class User extends Authenticatable
         'password',
     ];
 
+    public function bookings() {
+    return $this->hasMany(Booking::class);
+}
+
     /**
      * The attributes that should be hidden for serialization.
      *

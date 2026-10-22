@@ -29,5 +29,11 @@ class DatabaseSeeder extends Seeder
             'password' => 'password',
             'role' => 'user',
         ]);
+
+        // Затем вызываем сидеры для брендов и машин (сначала бренды, чтобы IDs совпали)
+        $this->call([
+            BrandSeeder::class,
+            CarSeeder::class,
+        ]);
     }
 }

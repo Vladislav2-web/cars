@@ -1,52 +1,89 @@
 @extends('layouts.app')
 
-@section('title', 'Каталог автомобилей - Автосалон')
-
 @section('content')
-    <h1>Каталог автомобилей</h1>
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <h1 style="margin-bottom: 24px; font-size: 28px; font-weight: bold;">Каталог автомобилей</h1>
 
-    <!-- Форма поиска, фильтра и сортировки -->
-    <form method="GET" action="{{ route('cars.index') }}" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-        <input type="text" name="q" value="{{ request('q') }}" placeholder="Поиск по названию..." style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+    <!-- Форма поиска и фильтрации -->
+    <form method="GET" action="{{ route('cars.index') }}" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        
+        <!-- Поле поиска по названию/марке -->
+        <div style="flex: 1; min-width: 200px;">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ request('q') }}" 
+                placeholder="Поиск по названию или марке (например, BMW)..." 
+                style="width: 100%; padding: 10px 14px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box;"
+            >
+        </div>
 
-        <select name="brand_id" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-            <option value="">Все марки</option>
-            @foreach ($brands as $brand)
-                <option value="{{ $brand->id }}" @selected(request('brand_id') == $brand->id)>
-                    {{ $brand->name }} ({{ $brand->cars_count }})
-                </option>
-            @endforeach
-        </select>
+        <!-- Сортировка -->
+        <div style="min-width: 180px;">
+            <select name="sort" style="width: 100%; padding: 10px 14px; border: 1px solid #ced4da; border-radius: 6px; background-color: #fff;">
+                <option value="">Сортировка по умолчанию</option>
+                <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Сначала дешевле</option>
+                <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Сначала дороже</option>
+            </select>
+        </div>
 
-        <select name="sort" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-            <option value="title" @selected(request('sort') == 'title')>Сортировать по названию</option>
-            <option value="year" @selected(request('sort') == 'year')>Сортировать по году</option>
-            <option value="price" @selected(request('sort') == 'price')>Сортировать по цене</option>
-        </select>
-
-        <button type="submit" class="badge" style="cursor: pointer; border: none; padding: 7px 14px;">Найти</button>
-        <a href="{{ route('cars.index') }}" style="margin-left: 5px;">Сбросить</a>
+        <!-- Кнопки управления -->
+        <button type="submit" style="padding: 10px 20px; background-color: #0d6efd; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+            Найти
+        </button>
+        
+        @if(request('q') || request('sort'))
+            <a href="{{ route('cars.index') }}" style="padding: 10px 20px; background-color: #6c757d; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                Сбросить
+            </a>
+        @endif
     </form>
 
-    <!-- Вывод списка автомобилей или предупреждения -->
-    @if ($items->isEmpty())
-        <x-alert type="warning">
-            По вашему запросу ничего не найдено.
-        </x-alert>
-    @else
-        <div style="display: grid; gap: 15px;">
-            @foreach ($items as $item)
-                <div class="card" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
-                    <h3><a href="{{ route('cars.show', $item) }}">{{ $item->title }}</a></h3>
-                    <p><strong>Марка:</strong> <a href="{{ route('brands.show', $item->brand) }}">{{ $item->brand->name }}</a></p>
-                    <p><strong>Год:</strong> {{ $item->year }} | <strong>Цена:</strong> {{ $item->price }} тнг.</p>
+    <!-- Сетка автомобилей -->
+    @if($cars->count() > 0)
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px;">
+            @foreach($cars as $car)
+                <div style="border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; background: #fff; display: flex; flex-direction: column; justify-content: space-between;">
+                    
+                    <div>
+                        <!-- Изображение автомобиля -->
+                        @if($car->image)
+                            <img src="{{ asset('storage/' . $car->image) }}" alt="{{ $car->title }}" style="width: 100%; height: 200px; object-fit: cover;">
+                        @else
+                            <div style="width: 100%; height: 200px; background-color: #e9ecef; display: flex; align-items: center; justify-content: center; color: #6c757d;">
+                                Нет фото
+                            </div>
+                        @endif
+
+                        <div style="padding: 16px;">
+                            <h3 style="margin: 0 0 8px 0; font-size: 20px;">{{ $car->title }}</h3>
+                            <p style="margin: 0 0 12px 0; color: #6c757d; font-size: 14px;">
+                                {{ $car->brand ?? 'Автомобиль' }} @if($car->year) | {{ $car->year }} г.@endif
+                            </p>
+                            <p style="font-size: 22px; font-weight: bold; color: #198754; margin: 0 0 16px 0;">
+                                {{ number_format($car->price, 0, '.', ' ') }} ₽
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="padding: 16px; border-top: 1px solid #f0f0f0; background: #fafafa;">
+                        <a href="{{ route('cars.show', $car->id) }}" style="display: block; text-align: center; width: 100%; padding: 10px 0; background-color: #0d6efd; color: white; border-radius: 6px; text-decoration: none; font-weight: 500; box-sizing: border-box;">
+                            Подробнее
+                        </a>
+                    </div>
+
                 </div>
             @endforeach
         </div>
 
-        <!-- Ссылки пагинации -->
-        <div style="margin-top: 20px;">
-            {{ $items->links() }}
+        <!-- Пагинация -->
+        <div style="margin-top: 30px;">
+            {{ $cars->links() }}
+        </div>
+    @else
+        <div style="padding: 20px; background-color: #e2e3e5; border-radius: 8px; color: #383d41; text-align: center;">
+            ⚠️ По вашему запросу ничего не найдено.
         </div>
     @endif
+</div>
 @endsection

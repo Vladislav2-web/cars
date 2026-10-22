@@ -1,47 +1,129 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 use App\Http\Controllers\CarController;
-use App\Http\Controllers\BrandController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
-use App\Http\Controllers\Admin\BrandController as AdminBrandController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/cars/pdf', [CarController::class, 'pdf'])->name('cars.pdf');
-// Гостевые маршруты
-Route::middleware('guest')->group(function () {
-    Route::get('/register', [RegisterController::class, 'create'])->name('register');
-    Route::post('/register', [RegisterController::class, 'store']);
-    Route::get('/login', [LoginController::class, 'create'])->name('login');
-    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:5,1'); // Защита от перебора
-});
-
-// Выход
-Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
-
-// Админ-панель с проверкой Gate
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'can:admin-panel'])->group(function () {
-    Route::get('/', [AdminCarController::class, 'index'])->name('index');
-    Route::resource('cars', AdminCarController::class)->except(['show']);
-    Route::resource('brands', AdminBrandController::class)->except(['show']);
-});
-// Публичные маршруты
+// Главная страница / Каталог автомобилей
 Route::get('/', [CarController::class, 'index'])->name('home');
-
-// Каталог автомобилей
 Route::get('/cars', [CarController::class, 'index'])->name('cars.index');
 Route::get('/cars/{car}', [CarController::class, 'show'])->name('cars.show');
 
-// Бренды
-Route::get('/brands/{brand}', [BrandController::class, 'show'])->name('brands.show');
+// PDF-каталог
+Route::get('/cars-pdf', [CarController::class, 'pdf'])->name('cars.pdf');
 
-// Админ-панель
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', [AdminCarController::class, 'index'])->name('index');
+// --- Аутентификация и Регистрация ---
+
+// Форма входа
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+
+// Обработка входа
+Route::post('/login', function (Request $request) {
+    $credentials = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
+
+    if (auth()->attempt($credentials)) {
+        $request->session()->regenerate();
+        return redirect()->intended('/profile');
+    }
+
+    return back()->withErrors([
+        'email' => 'Неверный email или пароль.',
+    ]);
+});
+
+// Форма регистрации
+Route::get('/register', function () {
+    return view('auth.register');
+})->name('register');
+
+// Обработка регистрации
+Route::post('/register', function (Request $request) {
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:6|confirmed',
+    ]);
+
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => 'user', // Обычный пользователь
+    ]);
+
+    auth()->login($user);
+
+    return redirect('/profile');
+})->name('register.store');
+
+// Выход из системы
+Route::post('/logout', function (Request $request) {
+    auth()->logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+    return redirect('/');
+})->name('logout');
+
+// Временный быстрый вход под админом (для тестирования)
+Route::get('/login-as-admin', function () {
+    $admin = User::where('role', 'admin')->first();
+    if ($admin) {
+        auth()->login($admin);
+        return redirect('/admin');
+    }
+    return 'Администратор не найден в БД. Выполнили ли вы php artisan db:seed?';
+});
+
+// --- Маршруты для авторизованных пользователей ---
+Route::middleware('auth')->group(function () {
+    Route::post('/cars/{car}/bookings', [BookingController::class, 'store'])->name('bookings.store');
     
-    // Ресурсные маршруты для управления автомобилями и марками
-    Route::resource('cars', AdminCarController::class)->except(['show']);
-    Route::resource('brands', AdminBrandController::class)->except(['show']);
+    Route::get('/profile', function () {
+        $bookings = auth()->user()->bookings()->with('car')->latest()->paginate(10);
+        return view('profile', compact('bookings'));
+    })->name('profile');
+});
+
+// --- Административные маршруты ---
+Route::group([
+    'middleware' => ['auth', function ($request, $next) {
+        if (auth()->check() && auth()->user()->role === 'admin') {
+            return $next($request);
+        }
+        abort(403, 'Доступ запрещен.');
+    }],
+    'prefix' => 'admin',
+    'as' => 'admin.'
+], function () {
+    
+    Route::get('/', function () {
+        return redirect()->route('admin.bookings.index');
+    })->name('index');
+
+    Route::resource('cars', AdminCarController::class);
+
+    Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
+    Route::patch('/bookings/{booking}/status', [AdminBookingController::class, 'updateStatus'])->name('bookings.status');
+
+    Route::get('/notifications', function () {
+        auth()->user()->unreadNotifications->markAsRead();
+        $notifications = auth()->user()->notifications()->paginate(10);
+        return view('admin.notifications', compact('notifications'));
+    })->name('notifications');
 });

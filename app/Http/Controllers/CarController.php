@@ -3,49 +3,40 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
-use App\Models\Brand;
 use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf; // Обязательный импорт для DomPDF
 
 class CarController extends Controller
 {
     public function index(Request $request)
     {
-        // Белый список для безопасной сортировки
-        $sort = in_array($request->sort, ['title', 'year', 'price']) ? $request->sort : 'title';
+        $query = Car::query();
 
-        $items = Car::with('brand')
-            ->when($request->q, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('title', 'like', '%' . $search . '%')
-                      ->orWhere('description', 'like', '%' . $search . '%');
-                });
-            })
-            ->when($request->brand_id, fn ($q, $b) => $q->where('brand_id', $b))
-            ->orderBy($sort)
-            ->paginate(9)
-            ->withQueryString();
+        // Поиск по ключевому слову (название, марка, описание)
+        if ($request->filled('q')) {
+            $searchTerm = $request->input('q');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'like', "%{$searchTerm}%")
+                  ->orWhere('brand', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+        }
 
-        $brands = Brand::withCount('cars')->orderBy('name')->get();
+        // Фильтрация по марке
+        if ($request->filled('brand_id')) {
+            $query->where('brand_id', $request->input('brand_id'));
+        }
 
-        return view('cars.index', compact('items', 'sort', 'brands'));
-    }
+        // Сортировка
+        if ($request->input('sort') === 'price_asc') {
+            $query->orderBy('price', 'asc');
+        } elseif ($request->input('sort') === 'price_desc') {
+            $query->orderBy('price', 'desc');
+        } else {
+            $query->latest();
+        }
 
-    public function show(Car $car)
-    {
-        return view('cars.show', compact('car'));
-    }
+        $cars = $query->paginate(9)->withQueryString();
 
-    // Метод для генерации и скачивания PDF-каталога
-    public function pdf(Request $request)
-    {
-        $cars = Car::with('brand')
-            ->when($request->brand_id, fn ($q, $b) => $q->where('brand_id', $b))
-            ->orderBy('title')
-            ->get();
-
-        return Pdf::loadView('pdf.catalog', compact('cars'))
-            ->setPaper('a4')
-            ->download('cars-catalog-' . now()->format('Y-m-d') . '.pdf');
+        return view('cars.index', compact('cars'));
     }
 }

@@ -34,6 +34,10 @@ protected function coverUrl(): Attribute
         return $this->belongsTo(Brand::class);
     }
 
+    public function bookings() {
+    return $this->hasMany(Booking::class);
+}
+
     // Связь с пользователем (автором записи)
     public function user()
     {
