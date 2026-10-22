@@ -1,26 +1,26 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\BrandController as AdminBrandController;
 
-// Главная страница
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+// Публичные маршруты
+Route::get('/', [CarController::class, 'index'])->name('home');
 
-// Публичный каталог автомобилей и карточка автомобиля (Eloquent модель-биндгинг)
+// Каталог автомобилей
 Route::get('/cars', [CarController::class, 'index'])->name('cars.index');
 Route::get('/cars/{car}', [CarController::class, 'show'])->name('cars.show');
 
-// Публичная страница конкретной марки (производителя)
+// Бренды
 Route::get('/brands/{brand}', [BrandController::class, 'show'])->name('brands.show');
 
-// Админ-панель (с защитой секретным ключом, как делали ранее)
+// Админ-панель
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminCarController::class, 'index'])->name('index');
-    Route::get('/cars', [AdminCarController::class, 'index'])->name('cars.index');
-    Route::get('/cars/create', [AdminCarController::class, 'create'])->name('create');
-    Route::get('/cars/{car}', [AdminCarController::class, 'show'])->name('show');
+    
+    // Ресурсные маршруты для управления автомобилями и марками
+    Route::resource('cars', AdminCarController::class)->except(['show']);
+    Route::resource('brands', AdminBrandController::class)->except(['show']);
 });
