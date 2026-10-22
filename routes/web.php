@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\BrandController as AdminBrandController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 
+
+Route::get('/cars/pdf', [CarController::class, 'pdf'])->name('cars.pdf');
 // Гостевые маршруты
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'create'])->name('register');

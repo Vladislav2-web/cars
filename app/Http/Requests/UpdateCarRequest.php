@@ -33,6 +33,7 @@ class UpdateCarRequest extends FormRequest
             'price'        => ['required', 'numeric', 'min:0'],
             'description'  => ['nullable', 'string', 'max:2000'],
             'is_available' => ['boolean'],
+            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 

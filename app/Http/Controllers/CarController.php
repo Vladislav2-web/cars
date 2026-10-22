@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Car;
 use App\Models\Brand;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf; // Обязательный импорт для DomPDF
 
 class CarController extends Controller
 {
@@ -25,7 +26,6 @@ class CarController extends Controller
             ->paginate(9)
             ->withQueryString();
 
-        // Получаем все марки для выпадающего списка вместе с количеством машин (если нужно)
         $brands = Brand::withCount('cars')->orderBy('name')->get();
 
         return view('cars.index', compact('items', 'sort', 'brands'));
@@ -34,5 +34,18 @@ class CarController extends Controller
     public function show(Car $car)
     {
         return view('cars.show', compact('car'));
+    }
+
+    // Метод для генерации и скачивания PDF-каталога
+    public function pdf(Request $request)
+    {
+        $cars = Car::with('brand')
+            ->when($request->brand_id, fn ($q, $b) => $q->where('brand_id', $b))
+            ->orderBy('title')
+            ->get();
+
+        return Pdf::loadView('pdf.catalog', compact('cars'))
+            ->setPaper('a4')
+            ->download('cars-catalog-' . now()->format('Y-m-d') . '.pdf');
     }
 }

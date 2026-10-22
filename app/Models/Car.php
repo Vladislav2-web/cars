@@ -17,7 +17,16 @@ class Car extends Model
         'price',
         'description',
         'is_available',
+        'cover',
     ];
+
+    // Аксессор для получения корректного URL картинки или заглушки
+protected function coverUrl(): Attribute
+{
+    return Attribute::get(fn () => $this->cover
+        ? asset('storage/' . $this->cover)
+        : asset('images/no-cover.png'));
+}
 
     // Связь с маркой автомобиля
     public function brand()

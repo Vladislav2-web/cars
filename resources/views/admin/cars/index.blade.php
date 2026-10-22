@@ -14,6 +14,10 @@
         </div>
     @endif
 
+    <a href="{{ route('cars.pdf', request()->query()) }}" style="background: #2b6cb0; color: #fff; padding: 8px 14px; border-radius: 4px; text-decoration: none;">
+    Скачать каталог в PDF
+</a>
+
     <table style="width: 100%; border-collapse: collapse; background: #1d2535;">
         <thead>
             <tr style="border-bottom: 1px solid #2b3546; text-align: left;">
