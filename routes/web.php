@@ -1,13 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
+use App\Http\Controllers\SitePageController;
+use App\Http\Controllers\TestDriveController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Admin\TestDriveController as AdminTestDriveController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,70 +18,34 @@ use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 |--------------------------------------------------------------------------
 */
 
-// Главная страница / Каталог автомобилей
-Route::get('/', [CarController::class, 'index'])->name('home');
+// Обычные страницы сайта
+Route::get('/', [SitePageController::class, 'home'])->name('home');
+Route::get('/about', [SitePageController::class, 'about'])->name('about');
+Route::get('/contacts', [SitePageController::class, 'contacts'])->name('contacts');
+Route::get('/rules', [SitePageController::class, 'rules'])->name('rules');
+
+// Каталог автомобилей
 Route::get('/cars', [CarController::class, 'index'])->name('cars.index');
 Route::get('/cars/{car}', [CarController::class, 'show'])->name('cars.show');
+Route::get('/cars/{car}/pdf', [CarController::class, 'carPdf'])->name('cars.pdf.one');
 
 // PDF-каталог
 Route::get('/cars-pdf', [CarController::class, 'pdf'])->name('cars.pdf');
 
-// --- Аутентификация и Регистрация ---
+// Заявка на тест-драйв
+Route::get('/test-drive', [TestDriveController::class, 'create'])->name('test-drive');
+Route::post('/test-drive', [TestDriveController::class, 'store'])->name('test-drive.store');
 
-// Форма входа
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
-
-// Обработка входа
-Route::post('/login', function (Request $request) {
-    $credentials = $request->validate([
-        'email' => ['required', 'email'],
-        'password' => ['required'],
-    ]);
-
-    if (auth()->attempt($credentials)) {
-        $request->session()->regenerate();
-        return redirect()->intended('/profile');
-    }
-
-    return back()->withErrors([
-        'email' => 'Неверный email или пароль.',
-    ]);
+// --- Вход и регистрация (только для гостей) ---
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'show'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+    Route::get('/register', [RegisterController::class, 'show'])->name('register');
+    Route::post('/register', [RegisterController::class, 'register']);
 });
 
-// Форма регистрации
-Route::get('/register', function () {
-    return view('auth.register');
-})->name('register');
-
-// Обработка регистрации
-Route::post('/register', function (Request $request) {
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255|unique:users',
-        'password' => 'required|string|min:6|confirmed',
-    ]);
-
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-        'role' => 'user', // Обычный пользователь
-    ]);
-
-    auth()->login($user);
-
-    return redirect('/profile');
-})->name('register.store');
-
-// Выход из системы
-Route::post('/logout', function (Request $request) {
-    auth()->logout();
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-    return redirect('/');
-})->name('logout');
+// Выход
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Временный быстрый вход под админом (для тестирования)
 Route::get('/login-as-admin', function () {
@@ -93,11 +60,20 @@ Route::get('/login-as-admin', function () {
 // --- Маршруты для авторизованных пользователей ---
 Route::middleware('auth')->group(function () {
     Route::post('/cars/{car}/bookings', [BookingController::class, 'store'])->name('bookings.store');
-    
+
     Route::get('/profile', function () {
         $bookings = auth()->user()->bookings()->with('car')->latest()->paginate(10);
         return view('profile', compact('bookings'));
     })->name('profile');
+
+    Route::get('/my-test-drives', function () {
+        $user = auth()->user();
+        $testDrives = \App\Models\TestDrive::with('car')->where('user_id', $user->id)->latest()->get();
+        $notifications = $user->notifications()->latest()->take(20)->get();
+        $user->unreadNotifications->markAsRead();
+
+        return view('my-test-drives', compact('testDrives', 'notifications'));
+    })->name('my.test-drives');
 });
 
 // --- Административные маршруты ---
@@ -111,7 +87,7 @@ Route::group([
     'prefix' => 'admin',
     'as' => 'admin.'
 ], function () {
-    
+
     Route::get('/', function () {
         return redirect()->route('admin.bookings.index');
     })->name('index');
@@ -119,6 +95,8 @@ Route::group([
     Route::resource('cars', AdminCarController::class);
 
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
+    Route::get('/test-drives', [AdminTestDriveController::class, 'index'])->name('test-drives.index');
+        Route::patch('/test-drives/{testDrive}/status', [AdminTestDriveController::class, 'updateStatus'])->name('test-drives.status');
     Route::patch('/bookings/{booking}/status', [AdminBookingController::class, 'updateStatus'])->name('bookings.status');
 
     Route::get('/notifications', function () {

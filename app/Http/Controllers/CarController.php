@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Car;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CarController extends Controller
 {
@@ -38,5 +39,30 @@ class CarController extends Controller
         $cars = $query->paginate(9)->withQueryString();
 
         return view('cars.index', compact('cars'));
+    }
+
+        public function show(\App\Models\Car $car)
+    {
+        $car->load('brand');
+
+        return view('cars.show', compact('car'));
+    }
+
+        public function carPdf(Car $car)
+    {
+        $car->load('brand');
+
+        $pdf = Pdf::loadView('cars.pdf-car', compact('car'));
+
+        return $pdf->download('car-' . $car->id . '.pdf');
+    }
+
+    public function pdf(Request $request)
+    {
+        $cars = Car::with('brand')->latest()->get();
+
+        $pdf = Pdf::loadView('cars.pdf-catalog', compact('cars'));
+
+        return $pdf->download('catalog.pdf');
     }
 }

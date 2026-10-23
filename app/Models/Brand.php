@@ -16,4 +16,8 @@ class Brand extends Model
     {
         return $this->hasMany(Car::class);
     }
+        public function __toString(): string
+    {
+        return (string) $this->name;
+    }
 }
